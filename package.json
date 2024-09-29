@@ -1,0 +1,34 @@
+{
+  "name": "digital-fortress-proxy-server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@elastic/elasticsearch": "^8.15.0",
+    "apify-client": "^2.9.5",
+    "axios": "^1.7.7",
+    "cheerio": "^1.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "exa-js": "^1.1.3",
+    "express": "^4.21.0",
+    "express-rate-limit": "^7.4.0",
+    "geoip-lite": "^1.4.10",
+    "https": "^1.0.0",
+    "mongoose": "^8.7.0",
+    "request": "^2.88.2",
+    "useragent": "^2.3.0",
+    "winston": "^3.14.2",
+    "xml2js": "^0.6.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.7"
+  }
+}
