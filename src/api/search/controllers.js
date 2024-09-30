@@ -37,37 +37,64 @@ module.exports.searchExaSearch = async (req, res) => {
 }
 
 
-module.exports.searchElasticSearch = async (req, res) => {
-    const { search_query, skip, size } = req.body;
-    
-    try {
-        const result = await elasticSearch.search({
-            index: "cyber_threat_intel",
-            query: {
-                query_string: {
-                    query: search_query,  // Your search input
-                    default_field: "*"    // This will search across all fields
-                }
-            },
-            sort: [{
-                "created_at": {
-                    "order": "desc"
-                }
-            }],
-            size: size,
-            from: skip,
-        });
-        
-        let data = result.hits.hits.map((item) => {
-            return item._source;
-        });
+const escapeElasticQuery = (query) => {
+    return query.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+};
 
+module.exports.searchElasticSearch = async (req, res) => {
+    const { search_query, skip, size, type } = req.body;
+    let data = [];
+    let hits = 0;
+    try {
+       
+        if (!type || type === "scan" || type===""){
+            const result = await elasticSearch.search({
+                index: "cyber_threat_intel",
+                query: {
+                    query_string: {
+                        query: escapeElasticQuery(search_query) ? search_query != "*" : search_query,  // Escaped search input
+                        default_field: "*"    // Search across all fields
+                    }
+                },
+                sort: [{
+                    "created_at": {
+                        "order": "desc"
+                    }
+                }],
+                size: size,
+                from: skip,
+            });
+    
+            data = result.hits.hits.map((item) => item._source);
+            hits = result.hits.total.value;
+        }else if(type === "index"){
+            const result = await elasticSearch.search({
+                index: "cyber_threat_intel",
+                query: {
+                    match: {
+                        "id": search_query
+                    }
+                },
+                sort: [{
+                    "created_at": {
+                        "order": "desc"
+                    }
+                }],
+                size: size,
+                from: skip,
+            });
+    
+            data = result.hits.hits.map((item) => item._source);
+            hits = result.hits.total.value;
+        }
         // Return search results to frontend
         return res.json({
-            total_hits: result.hits.total.value,
+            total_hits: hits,
             data: data
         });
     } catch (error) {
-        throw error;
+        // throw error;
+        console.log(error.message);
+        return res.status(500).json({ message: "Internal Server Error" });
     }
-}
+};

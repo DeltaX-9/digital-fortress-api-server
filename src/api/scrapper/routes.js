@@ -5,4 +5,6 @@ const scrapperController = require('./controllers');
 
 router.get('/screenshot', scrapperController.getScreenShot);
 
+router.get("/twitter", scrapperController.getTwitter);
+
 module.exports = router;
