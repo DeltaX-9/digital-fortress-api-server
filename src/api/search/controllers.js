@@ -1,5 +1,6 @@
 const Exa = require("exa-js").default;
 const elasticSearch = require("../../services/es");
+const logger = require("../../services/logger");
 
 module.exports.searchExaSearch = async (req, res) => {
     try {
@@ -52,12 +53,12 @@ module.exports.searchElasticSearch = async (req, res) => {
                 index: "cyber_threat_intel",
                 query: {
                     query_string: {
-                        query: escapeElasticQuery(search_query) ? search_query != "*" : search_query,  // Escaped search input
+                        query: search_query,  // Escaped search input
                         default_field: "*"    // Search across all fields
                     }
                 },
                 sort: [{
-                    "created_at": {
+                    "created_at": { 
                         "order": "desc"
                     }
                 }],
@@ -68,6 +69,8 @@ module.exports.searchElasticSearch = async (req, res) => {
             data = result.hits.hits.map((item) => item._source);
             hits = result.hits.total.value;
         }else if(type === "index"){
+            console.log("Hello2")
+
             const result = await elasticSearch.search({
                 index: "cyber_threat_intel",
                 query: {
