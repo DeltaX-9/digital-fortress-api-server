@@ -3,7 +3,7 @@ const rssFeedService = require('./rss_feed_scrapper');
 
 
 
-module.exports.getRssFeed = async (req, res) => {
+module.exports.getRssFeed = async (req, res, next) => {
   try {
     let { source } = req.query;
     source = source.split(',');
@@ -20,6 +20,6 @@ module.exports.getRssFeed = async (req, res) => {
 
     return res.status(200).json(feed);
   } catch (error) {
-    throw error;
+    next(error);
   }
 }

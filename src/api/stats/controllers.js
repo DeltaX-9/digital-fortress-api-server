@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 const Model = mongoose.model('stats', {}, 'stats');
 
 
-module.exports.getStats = async(req,res) => {
+module.exports.getStats = async(req,res, next) => {
     try {
         const stats_id = req.params.id;
         const data = await Model.findById(stats_id);
@@ -11,6 +11,6 @@ module.exports.getStats = async(req,res) => {
         }
         return res.status(200).send(data);
     } catch (error) {
-        throw error;
+        next(error);
     }
 }
