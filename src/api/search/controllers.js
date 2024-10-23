@@ -106,7 +106,7 @@ module.exports.searchElasticSearchV2 = async (req, res, next) => {
     let hits = 0;
     let remainingSize = size;
     let currentSkip = skip;
-
+    let elasticSearchIndices = null;
     try {
         const searchAcrossIndices = async (indices, query, sort, size, from, highlight) => {
             const result = await elasticSearch.search({
@@ -132,6 +132,7 @@ module.exports.searchElasticSearchV2 = async (req, res, next) => {
         let highlight;
         if (type === "index") {
             query = { match: { "id": search_query } };
+            elasticSearchIndices = req.body.index
         } else if (type === "scan" || type === "") {
             query = { query_string: { query: search_query, default_field: "*" } };
         } else if (type === "query") {
@@ -150,7 +151,7 @@ module.exports.searchElasticSearchV2 = async (req, res, next) => {
 
         // Search in current month's index
         let currentIndex = `scraped-threats-data-${currentMonth}`;
-        let result = await searchAcrossIndices(currentIndex, query, sort, remainingSize, currentSkip);
+        let result = await searchAcrossIndices(elasticSearchIndices ? elasticSearchIndices : currentIndex, query, sort, remainingSize, currentSkip);
         processResults(result);
 
         // If we need more results, search in previous months
