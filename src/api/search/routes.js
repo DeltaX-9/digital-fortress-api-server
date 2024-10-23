@@ -9,6 +9,8 @@ router.get("/health", (req,res) => {
     res.send("Search API is working");
 });
 
+router.post("/index/v2", controllers.searchElasticSearchV2);
+
 router.post("/index", controllers.searchElasticSearch);
 
 

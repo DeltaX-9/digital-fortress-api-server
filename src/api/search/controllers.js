@@ -1,6 +1,7 @@
 const Exa = require("exa-js").default;
 const elasticSearch = require("../../services/es");
 const logger = require("../../services/logger");
+const moment = require("moment");
 
 module.exports.searchExaSearch = async (req, res, next) => {
     try {
@@ -13,7 +14,7 @@ module.exports.searchExaSearch = async (req, res, next) => {
             category,
             num_results
         } = req.body;
-        
+
         const exa = new Exa(process.env.EXA_API.split(",")[Math.floor(Math.random() * process.env.EXA_API.split(",").length)]);
         const result = await exa.searchAndContents(query, {
             category,
@@ -45,8 +46,7 @@ module.exports.searchElasticSearch = async (req, res, next) => {
     let data = [];
     let hits = 0;
     try {
-       
-        if (!type || type === "scan" || type===""){
+        if (!type || type === "scan" || type === "") {
             const result = await elasticSearch.search({
                 index: "cyber_threat_intel",
                 query: {
@@ -56,19 +56,17 @@ module.exports.searchElasticSearch = async (req, res, next) => {
                     }
                 },
                 sort: [{
-                    "created_at": { 
+                    "created_at": {
                         "order": "desc"
                     }
                 }],
                 size: size,
                 from: skip,
             });
-    
+
             data = result.hits.hits.map((item) => item._source);
             hits = result.hits.total.value;
-        }else if(type === "index"){
-            console.log("Hello2")
-
+        } else if (type === "index") {
             const result = await elasticSearch.search({
                 index: "cyber_threat_intel",
                 query: {
@@ -84,7 +82,7 @@ module.exports.searchElasticSearch = async (req, res, next) => {
                 size: size,
                 from: skip,
             });
-    
+
             data = result.hits.hits.map((item) => item._source);
             hits = result.hits.total.value;
         }
@@ -98,3 +96,87 @@ module.exports.searchElasticSearch = async (req, res, next) => {
         next(error);
     }
 };
+
+
+
+module.exports.searchElasticSearchV2 = async (req, res, next) => {
+    const { search_query, skip, size, type } = req.body;
+    const currentMonth = moment().format('YYYY-MM');
+    let data = [];
+    let hits = 0;
+    let remainingSize = size;
+    let currentSkip = skip;
+
+    try {
+        const searchAcrossIndices = async (indices, query, sort, size, from, highlight) => {
+            const result = await elasticSearch.search({
+                index: indices,
+                query: query,
+                sort: sort,
+                size: size,
+                from: from,
+                highlight: highlight
+            });
+            return result;
+        };
+
+        const processResults = (result) => {
+            data = [...data, ...result.hits.hits.map((item) => item._source)];
+            hits += result.hits.total.value;
+            remainingSize -= result.hits.hits.length;
+            currentSkip = Math.max(0, currentSkip - result.hits.total.value);
+        };
+
+        let query;
+        let sort = [{ "created_at": { "order": "desc" } }];
+        let highlight;
+        if (type === "index") {
+            query = { match: { "id": search_query } };
+        } else if (type === "scan" || type === "") {
+            query = { query_string: { query: search_query, default_field: "*" } };
+        } else if (type === "query") {
+            query = req.body.query;
+            sort = req.body.sort;
+            highlight = req.body.highlight;
+            remainingSize = req.body.size;
+            currentSkip = req.body.from;
+
+
+        } else {
+            // Add more conditions here if needed
+            query = { query_string: { query: search_query, default_field: "*" } }; // Default case
+        }
+
+
+        // Search in current month's index
+        let currentIndex = `scraped-threats-data-${currentMonth}`;
+        let result = await searchAcrossIndices(currentIndex, query, sort, remainingSize, currentSkip);
+        processResults(result);
+
+        // If we need more results, search in previous months
+        let previousMonth = moment(currentMonth).subtract(1, 'months');
+        while (remainingSize > 0 && previousMonth.isSameOrAfter('2024-04', 'month')) {
+            currentIndex = `scraped-threats-data-${previousMonth.format('YYYY-MM')}`;
+            result = await searchAcrossIndices(currentIndex, query, sort, remainingSize, currentSkip);
+            processResults(result);
+            previousMonth.subtract(1, 'months');
+        }
+
+        // Return search results to frontend
+        return res.json({
+            total_hits: hits,
+            data: data
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+module.exports.searchElasticSearchV3 = async (req, res, next) => {
+    try {
+        const { search_query, skip, size, type } = req.body;
+
+    } catch (error) {
+        next(error);
+    }
+}

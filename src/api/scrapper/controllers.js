@@ -1,6 +1,5 @@
 const apifyService = require('./apify_service');
 
-
 module.exports.getScreenShot = async(req,res) => {
     try {
         const { url } = req.query;
