@@ -11,6 +11,8 @@ router.get("/health", (req,res) => {
 
 router.post("/index/v2", controllers.searchElasticSearchV2);
 
+router.post("/index/v3", controllers.searchElasticSearchV3);
+
 router.post("/index", controllers.searchElasticSearch);
 
 

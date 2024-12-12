@@ -102,6 +102,7 @@ module.exports.searchElasticSearch = async (req, res, next) => {
 module.exports.searchElasticSearchV2 = async (req, res, next) => {
     const { search_query, skip, size, type } = req.body;
     const currentMonth = moment().format('YYYY-MM');
+    console.log("currentMonth", currentMonth);
     let data = [];
     let hits = 0;
     let remainingSize = size;
@@ -117,6 +118,7 @@ module.exports.searchElasticSearchV2 = async (req, res, next) => {
                 from: from,
                 highlight: highlight
             });
+            console.log("result", result, indices);
             return result;
         };
 
@@ -151,6 +153,7 @@ module.exports.searchElasticSearchV2 = async (req, res, next) => {
 
         // Search in current month's index
         let currentIndex = `scraped-threats-data-${currentMonth}`;
+        console.log("currentIndex", currentIndex);
         let result = await searchAcrossIndices(elasticSearchIndices ? elasticSearchIndices : currentIndex, query, sort, remainingSize, currentSkip);
         processResults(result);
 
@@ -175,7 +178,23 @@ module.exports.searchElasticSearchV2 = async (req, res, next) => {
 
 module.exports.searchElasticSearchV3 = async (req, res, next) => {
     try {
-        const { search_query, skip, size, type } = req.body;
+        const { index_name,search_query, skip, size, type, sort_query } = req.body;
+
+        const searchResults = await elasticSearch.search({
+            index: index_name,
+            query: search_query,
+            sort: sort_query,
+            size: size,
+            from: skip,
+        });
+
+        const data = searchResults.hits.hits.map((item) => item._source);
+
+        return res.json({
+            total_hits: searchResults.hits.total.value,
+            data: data
+        });
+
 
     } catch (error) {
         next(error);
